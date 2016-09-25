@@ -19,18 +19,20 @@ var product_array = [];
 getCustOrder();
 
 function getCustOrder() {
-	connection.query("SELECT * FROM `products`", function(err, rows, fields) {
+	connection.query("SELECT `ItemID`, `ProductName`, `DepartmentName`, `Price` FROM `products`", function(err, rows, fields) {
 		if (err) throw err;
-		//console.log(rows);
-		//var product_array = [];
-		for (var i = 0; i < rows.length; i++) {
-			var itemInfo = {
-				ItemID : rows[i].ItemID,
-				ProductName : rows[i].ProductName,
-				DepartmentName : rows[i].DepartmentName,
-				Price : rows[i].Price
+
+		// Feels like a hacky way to make sure I don't keep pushing stuff to array
+		if (product_array.length <= 0){
+			for (var i = 0; i < rows.length; i++) {
+				var itemInfo = {
+					ItemID : rows[i].ItemID,
+					ProductName : rows[i].ProductName,
+					DepartmentName : rows[i].DepartmentName,
+					Price : rows[i].Price
+				}
+				product_array.push(itemInfo);
 			}
-			product_array.push(itemInfo);
 		}
 		// Display the products in the array you just built
 		console.log("display products");
@@ -69,11 +71,11 @@ function getCustOrder() {
 				}
 			}
 			]).then(function(answer) {
-				connection.query("SELECT `StockQuantity` FROM `products` WHERE `ItemID` = ?", [choice.prodID], function(err, rows, fields) {
+				connection.query("SELECT `StockQuantity`, `Price` FROM `products` WHERE `ItemID` = ?", [choice.prodID], function(err, rows, fields) {
 					if (err) throw err;
 
-					console.log("You want " + answer.quantity + " of item ID: " + choice.prodID);
-					console.log("There are " + rows[0].StockQuantity + " available of that item");
+					console.log("There are " + rows[0].StockQuantity + " available of that item.");
+					//console.log("product_array[0]:", product_array[0]);
 					if(rows[0].StockQuantity < answer.quantity) {
 						console.log("Insufficient quantity available");
 						inquirer.prompt([
@@ -83,11 +85,44 @@ function getCustOrder() {
 								message: 'Would you like to place another order?'
 							}
 						]).then(function(again) {
-								getCustOrder();
+								if(again.continue) {
+										getCustOrder();
+								} else {
+									console.log("Come again soon!");
+									connection.end();
+								}
 						});						
 						
 					} else {
-						console.log("Let's place an order");
+						console.log("Let's place your order!");
+						// Display order details, product name, qty, and total price
+						console.log(printReceipt(product_array, choice.prodID, answer.quantity));
+						// var elementPos = product_array.map(function(x) {return x.ItemID; }).indexOf(parseInt(choice.prodID));
+						// var orderTotal = parseInt(answer.quantity) * product_array[elementPos].Price;
+						// console.log("You bought " + answer.quantity + " of " + product_array[elementPos].ProductName 
+						// 			+ " at $" + product_array[elementPos].Price + " each for a total of $" + orderTotal);
+
+
+						var newQuantity = rows[0].StockQuantity - parseInt(answer.quantity);
+						connection.query("UPDATE `products` SET `StockQuantity` = ? WHERE `ItemID` = ?", [newQuantity, choice.prodID], function(err, rows, fields) {
+							if (err) throw err;
+							// console.log("updated quantity to " + newQuantity);
+							inquirer.prompt([
+							{
+								type: 'confirm',
+								name: 'continue',
+								message: 'Would you like to place another order?'
+							}
+							]).then(function(again) {
+									if(again.continue) {
+										getCustOrder();
+									} else {
+										console.log("Come again soon!");
+										connection.end();
+									}
+							});	
+						});
+
 					}
 
 				});
@@ -98,15 +133,17 @@ function getCustOrder() {
 	});
 } // end getCustOrder
 
-
 function displayProducts(products) {
-	var padding = Array(45).join(' ');
-	var header = pad('            ','Product ID', false) + pad(padding, 'Product Name', false) + pad('          ', 'Price', true);
+	var prodPad = Array(45).join(' ');
+	var idPad = Array(14).join(' ');
+	var pricePad = Array(10).join(' ');
+
+	var header = pad(idPad,'Product ID', false) + pad(prodPad, 'Product Name', false) + pad(pricePad, 'Price', true);
 	var line = Array(67).join('-');
 	console.log(header + os.EOL + line);
 
 	for (var i = 0; i < products.length; i++) {
-		console.log(pad('            ',products[i].ItemID, false) + pad(padding, products[i].ProductName, false) + pad('          ', products[i].Price, true));
+		console.log(pad(idPad,products[i].ItemID, false) + pad(prodPad, products[i].ProductName, false) + pad(pricePad, products[i].Price, true));
 	}
 }
 
@@ -119,4 +156,21 @@ function pad(pad, str, padLeft) {
 	} else {
 		return (str + pad).substring(0, pad.length);
 	}
+}
+
+function printReceipt(arr, prodID, qty) {
+	var elementPos = arr.map(function(el) { return el.ItemID; }).indexOf(parseInt(prodID));
+	var orderTotal = parseInt(qty) * arr[elementPos].Price;
+
+	var receiptString = `
+	===========================================
+	Product:                       ${arr[elementPos].ProductName}
+	Price:                         $${arr[elementPos].Price.toFixed(2)}
+	Quantity:                      ${qty}
+	-------------------------------------------
+	Total:                         $${orderTotal.toFixed(2)}
+	===========================================
+	`;
+
+	return receiptString;
 }
