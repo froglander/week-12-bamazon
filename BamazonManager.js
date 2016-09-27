@@ -27,11 +27,52 @@ function displayMenu() {
 		choices: [ "View Products for Sale",
 				   "View Low Inventory",
 				   "Add to Inventory",
-				   "Add New Product"
+				   "Add New Product",
+				   "Quit"
 				]
 	}
 	]).then(function(choice) {
 		console.log("You chose:", choice.menu);
 
+		var menuChoice = {
+			"View Products for Sale" : function () {
+				viewProducts();
+			},
+			"View Low Inventory" : function () {
+				viewLowInventory();
+			},
+			"Add to Inventory" : function() {
+				addInventory();
+			},
+			"Add New Product" : function() {
+				addNewProduct();
+			},
+			"Quit" : function() {
+				console.log("Thanks for using Bamazon Manager!");
+			}
+		}
+
+		menuChoice[choice.menu]();
+
 	})
+}
+
+function viewProducts() {
+	console.log("View products");
+	displayMenu();
+}
+
+function viewLowInventory() {
+	console.log("View low inventory");
+	displayMenu();
+}
+
+function addInventory() {
+	console.log("Add to Inventory");
+	displayMenu();
+}
+
+function addNewProduct() {
+	console.log("Add New Product");
+	displayMenu();
 }
