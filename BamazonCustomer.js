@@ -162,7 +162,9 @@ function displayProducts(products) {
 	console.log(header + os.EOL + line);
 
 	for (var i = 0; i < products.length; i++) {
-		console.log(pad(idPad,products[i].ItemID, false) + pad(prodPad, products[i].ProductName, false) + pad(pricePad, products[i].Price, true));
+		console.log(pad(idPad,products[i].ItemID, false) 
+			      + pad(prodPad, products[i].ProductName, false) 
+			      + pad(pricePad, products[i].Price, true));
 	}
 }
 
