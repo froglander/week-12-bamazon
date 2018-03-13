@@ -1,16 +1,24 @@
 // required packages
+require("dotenv").config();
+
+const keys = require("./keys.js");
+
 var mysql = require('mysql');
 var inquirer = require('inquirer');
 var os = require('os');
 
+// var client = new Twitter(keys.twitter);
+
 // Set up mysql connection
-var connection = mysql.createConnection({
-	host: "localhost",
-	port: 3306,
-	user: "root",
-	password: "root",
-	database: "bamazon"
-});
+// var connection = mysql.createConnection({
+// 	host: "localhost",
+// 	port: 3306,
+// 	user: "root",
+// 	password: "",
+// 	database: "bamazon"
+// });
+console.log(keys.mysql);
+var connection = mysql.createConnection(keys.mysql);
 
 // Make the connection and throw an error if there is one
 connection.connect(function(err) {
@@ -202,7 +210,7 @@ function printReceipt(arr, prodID, qty) {
 	var receiptString = `
 	===========================================
 	Product:                       ${arr[elementPos].ProductName}
-	Price:                         $${arr[elementPos].Price.toFixed(2)}
+	Price:                         $${parseFloat(arr[elementPos].Price).toFixed(2)}
 	Quantity:                      ${qty}
 	-------------------------------------------
 	Total:                         $${orderTotal.toFixed(2)}
